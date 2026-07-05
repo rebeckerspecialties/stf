@@ -90,9 +90,10 @@ Android XR devices work at reduced confidence without any code changes.
    $ stf xr webxr-smoke -s 1WMHH812345678 --url https://example.com/my-webxr-scene/
    ```
 
-Every option can also be supplied through the environment with an `STF_XR_` prefix (e.g.
-`STF_XR_SERIAL=1WMHH812345678`), and the ADB binary is resolved from `--adb`, `$ADB` or plain
-`adb` in that order.
+The shared options read environment fallbacks when the flag is omitted: `$STF_XR_SERIAL`
+for `--serial`, `$STF_XR_ADB` for `--adb` and `$STF_XR_TIMEOUT` for `--timeout`. Other
+options are flag-only. The ADB binary is resolved from `--adb`, `$STF_XR_ADB`, `$ADB` or
+plain `adb` in that order.
 
 ## Command reference
 
@@ -119,8 +120,9 @@ On failure every command exits 1; with `--json` the error is printed on stdout a
 ### `stf xr devices`
 
 Lists connected devices with their XR classification. No `--serial`; extra flags:
-`--xr-only` (only devices classified as XR headsets, default false) and `--browser`
-(boolean, probe installed browser packages on each device, default true).
+`--xr-only` (only devices classified as XR headsets, default false) and `--probe-browser`
+(probe installed browser packages on each device, default true; disable with
+`--no-probe-browser`).
 
 ```console
 $ stf xr devices --json
@@ -318,7 +320,8 @@ you to use `stf xr tap` (ADB input) instead.
 
 ### `stf xr screencap`
 
-Saves a PNG screenshot to `--out` (default `./xr-screencap.png`). **On a headset this is the
+Saves a PNG screenshot to `--out` (default `./xr-screencap.png`; the JSON result reports the
+resolved absolute path). **On a headset this is the
 flat 2D mirror view, not the per-eye stereo output the wearer sees** — see
 [Mirror screenshot caveat](#mirror-screenshot-caveat). The JSON result carries the same
 warning in a `note` field:
@@ -326,7 +329,7 @@ warning in a `note` field:
 ```json
 {
   "serial": "1WMHH812345678",
-  "path": "./xr-screencap.png",
+  "path": "/home/me/xr-screencap.png",
   "note": "This is the flat 2D mirror view, not the per-eye stereo output the wearer sees."
 }
 ```
@@ -347,7 +350,8 @@ Measures time to meaningful first render; see
 [TTMFR methods and confidence](#ttmfr-methods-and-confidence). Flags: `--method` (required:
 `logcat-marker`, `webxr-marker`, `image-diff` or `openxr-layer`), `--url` or
 `--package`/`--activity` as the target, `--marker` (default `STF_XR_READY`), `--threshold`
-(default 0.02), `--interval`, `--artifacts-dir`.
+(default 0.02), `--interval`, `--artifacts-dir`, plus `--browser`/`--port` for the
+CDP-based `webxr-marker` method.
 
 The result always uses the `stf.xr.ttmfr.result.v1` schema and the command never rejects for
 measurement failures — failures land in `error` with `ok: false` (exit 1, except for the

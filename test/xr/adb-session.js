@@ -280,4 +280,46 @@ describe('xr/adb/session against fake-adb', function() {
         expect(err.message).to.contain('fake-adb: forced failure')
       })
   })
+
+  it('quotes shell metacharacters so the device shell cannot split URLs', function() {
+    return useFixture({})
+      .then(function() {
+        return newSession().openUrl(
+          'https://example.com/scene?vr=1&autostart=1', 'com.oculus.browser')
+      })
+      .then(readLog)
+      .then(function(invocations) {
+        expect(invocations[0]).to.deep.equal([
+          '-s', 'FAKE1', 'shell', 'am', 'start'
+        , '-a', 'android.intent.action.VIEW'
+        , '-d', '\'https://example.com/scene?vr=1&autostart=1\''
+        , 'com.oculus.browser'
+        ])
+      })
+  })
+
+  it('quotes text input containing quotes and ampersands', function() {
+    return useFixture({})
+      .then(function() {
+        return newSession().text('it\'s a & test')
+      })
+      .then(readLog)
+      .then(function(invocations) {
+        var args = invocations[0]
+        expect(args[args.length - 1]).to.equal('\'it\'\\\'\'s%sa%s&%stest\'')
+      })
+  })
+
+  it('rejects instead of crashing when the screencap destination is unwritable', function() {
+    return useFixture({})
+      .then(function() {
+        return newSession().screencap(
+          path.join(tmpDir, 'no-such-dir', 'shot.png'))
+      })
+      .then(function() {
+        throw new Error('expected screencap to fail')
+      }, function(err) {
+        expect(err.message).to.contain('ENOENT')
+      })
+  })
 })

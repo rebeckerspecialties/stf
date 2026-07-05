@@ -342,6 +342,26 @@ describe('xr/providers', function() {
         expect(controller.session).to.equal(session)
       })
     })
+
+    it('rejects clearly when a forced browser package is not installed', function() {
+      var session = fakeSession({
+        props: QUEST2_PROPS
+      , packages: ['com.oculus.browser', 'com.android.settings']
+      })
+      var provider = providers.forName('oculus', 'SER1', {
+        session: session
+      , browserPackage: 'com.example.missingbrowser'
+      })
+
+      return provider.chrome()
+        .then(function() {
+          throw new Error('expected a rejection')
+        }, function(err) {
+          expect(err.message).to.contain('com.example.missingbrowser')
+          expect(err.message).to.contain('not installed')
+          expect(err.message).to.contain('com.oculus.browser')
+        })
+    })
   })
 
   describe('misc provider behavior', function() {

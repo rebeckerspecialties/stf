@@ -73,6 +73,12 @@ function startCdpEndpoint() {
       else if (message.method === 'Hang.close') {
         ws.close()
       }
+      else if (message.method === 'Hang.badframe') {
+        // Write a protocol-violating frame (RSV1 set without a negotiated
+        // extension) straight to the raw socket so the CLIENT ws emits
+        // 'error' after the connection is established.
+        ws._socket.write(Buffer.from([0xc1, 0x00]))
+      }
       else {
         ws.send(JSON.stringify({id: message.id, result: {}}))
       }
@@ -306,6 +312,19 @@ describe('xr/chrome/cdp-client', function() {
         }, function(err) {
           expect(err.message).to.match(/socket closed before response/)
           return closed
+        })
+    })
+
+    it('rejects in-flight commands on a post-connect socket error ' +
+        'instead of crashing the process', function() {
+      // No 'error' listener is attached on purpose: before the fix this
+      // scenario threw an unhandled 'error' event and killed the process.
+      return client.send('Hang.badframe', {}, {timeout: 5000})
+        .then(function() {
+          throw new Error('expected a rejection')
+        }, function(err) {
+          expect(err.message).to.match(/before response to #/)
+          expect(client.isConnected()).to.equal(false)
         })
     })
   })

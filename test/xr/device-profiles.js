@@ -106,6 +106,28 @@ describe('xr/device-profiles', function() {
       expect(profiles.isLikelyXr({characteristics: 'nosdcard,xr'})).to.equal(true)
       expect(profiles.isLikelyXr({characteristics: 'boxrocket'})).to.equal(false)
     })
+
+    it('does not flag ordinary Samsung/HTC phones on the manufacturer alone', function() {
+      var phone = {manufacturer: 'samsung', model: 'SM-S928B', characteristics: 'nosdcard'}
+      expect(profiles.classify(phone).vendorId).to.equal('samsung')
+      expect(profiles.classify(phone).confidence).to.equal('medium')
+      expect(profiles.isLikelyXr(phone)).to.equal(false)
+      expect(profiles.isLikelyXr({manufacturer: 'HTC', model: 'HTC U23'})).to.equal(false)
+    })
+
+    it('accepts weak manufacturer matches with vr characteristics or XR-ish names', function() {
+      expect(profiles.isLikelyXr({
+        manufacturer: 'samsung'
+      , model: 'SM-I610'
+      , characteristics: 'xr'
+      })).to.equal(true)
+
+      // Unlisted headset model from a phone-dominated brand.
+      expect(profiles.isLikelyXr({
+        manufacturer: 'HTC'
+      , model: 'VIVE Focus 3'
+      })).to.equal(true)
+    })
   })
 
   describe('browserEngine()', function() {
